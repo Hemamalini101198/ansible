@@ -1,0 +1,37 @@
+---
+- name: Create EC2 Instance
+  hosts: localhost
+  gather_facts: false
+  vars:
+    aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID }}"
+    aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY }}"
+    region: "{{ params.AWS_REGION }}"
+    instance_type: "{{ params.INSTANCE_TYPE }}"
+    ami_id: "{{ params.AMI_ID }}"
+    key_name: "{{ params.KEY_NAME }}"
+    security_group: "{{ params.SECURITY_GROUP }}"
+    subnet_id: "{{ params.SUBNET_ID }}"
+    tag_name: "{{ params.INSTANCE_NAME }}"
+
+  tasks:
+    - name: Launch EC2 instance
+      ec2:
+        aws_access_key: "{{ aws_access_key }}"
+        aws_secret_key: "{{ aws_secret_key }}"
+        region: "{{ region }}"
+        key_name: "{{ key_name }}"
+        instance_type: "{{ instance_type }}"
+        image: "{{ ami_id }}"
+        wait: yes
+        group: "{{ security_group }}"
+        count: 1
+        vpc_subnet_id: "{{ subnet_id }}"
+        assign_public_ip: yes
+        instance_tags:
+          - key: Name
+            value: "{{ tag_name }}"
+        register: ec2_instance
+
+    - name: Display instance information
+      debug:
+        var: ec2_instance.instances[0].public_ip
