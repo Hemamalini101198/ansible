@@ -17,7 +17,7 @@
 
   tasks:
     - name: Launch EC2 instance
-      community.aws.ec2:
+      community.aws.ec2_instance:
         aws_access_key: "{{ aws_access_key }}"
         aws_secret_key: "{{ aws_secret_key }}"
         region: "{{ region }}"
