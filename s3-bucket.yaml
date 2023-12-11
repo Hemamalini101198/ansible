@@ -12,7 +12,11 @@
         name: "{{ bucket_name }}"
         state: present
         encryption: "{{ encryption_type }}"
-      register: created_bucket
+      register: s3_bucket
+
+    - name: debugging s3 bucket
+      debug:
+        msg: "{{ s3_bucket }}"
 
     - name: Block S3 public access
       ansible.builtin.command: >
@@ -24,3 +28,9 @@
             BlockPublicPolicy=true,
             RestrictPublicBuckets=true"        
       when: block_public_access
+
+    - name: Set S3 canned ACL
+      ansible.builtin.command: >
+        aws s3api put-bucket-acl
+          --bucket {{ bucket_name }}
+          --acl {{ s3_acl }}        
