@@ -1,42 +1,70 @@
 ---
 - name: Create EC2 Instance
   hosts: localhost
-  gather_facts: false
+  gather_facts: False
   vars:
-    aws_access_key: "{{ ansible_env.AWS_ACCESS_KEY_ID }}"
-    aws_secret_key: "{{ ansible_env.AWS_SECRET_ACCESS_KEY }}"
-    region: "{{ params.AWS_REGION }}"
-    instance_type: "{{ params.INSTANCE_TYPE }}"
-    ami_id: "{{ params.AMI_ID }}"
-    key_name: "{{ params.KEY_NAME }}"
-    security_group: "{{ params.SECURITY_GROUP }}"
-    subnet_id: "{{ params.SUBNET_ID }}"
-    tag_name: "{{ params.INSTANCE_NAME }}"
-    ebs_volume_size_gb: "{{ params.EBS_VOLUME_SIZE_GB }}"
+    region: "ap-south-1"
+    instance_type: "t2.micro"
+    ami_id: "ami-0287a05f0ef0e9d9a"
+    key_name: "ansible"
+    subnet_id: "subnet-08800bade88b5283b"
+    security_group: "ansible-sg"
+    instance_name: "ansible-test-instance"
+    vpc_id: "vpc-02925fd2ece64136d"
+    ebs_volume_size_gb: "30"
     ebs_volume_device: "/dev/sdf"
 
   tasks:
-    - name: Launch EC2 instance
-      community.aws.ec2_instance:
-        aws_access_key: "{{ aws_access_key }}"
-        aws_secret_key: "{{ aws_secret_key }}"
+    - name: Create Key Pair
+      ec2_key:
+        name: "{{ key_name }}"
         region: "{{ region }}"
-        key_name: "{{ key_name }}"
+      register: key_pair
+
+    - name: debugging key pair
+      debug:
+        msg: "{{ key_pair }}"
+
+    - name: Create Security Group
+      ec2_group:
+        name: "{{ security_group }}"
+        description: "sg for ansible test"
+        vpc_id: "{{ vpc_id }}"
+        region: "{{ region }}"
+        rules:
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+      register: security_group_info
+
+    - name: debugging security group
+      debug:
+        msg: "{{ security_group_info }}"
+
+    - name: Launch EC2 Instance
+      ec2_instance:
+        name: "{{ instance_name }}"
+        key_name: "{{ key_pair.key.name }}"
         instance_type: "{{ instance_type }}"
-        image: "{{ ami_id }}"
+        image_id: "{{ ami_id }}"
         wait: yes
-        group: "{{ security_group }}"
-        count: 1
+        region: "{{ region }}"
         vpc_subnet_id: "{{ subnet_id }}"
-        assign_public_ip: yes
+        security_groups:
+          - "{{ security_group_info.group_id }}"
         volumes:
           - device_name: "{{ ebs_volume_device }}"
-            volume_size: "{{ ebs_volume_size_gb }}"
-        instance_tags:
-          - key: Name
-            value: "{{ tag_name }}"
-        register: ec2_instance
+            ebs:
+              volume_size: "{{ ebs_volume_size_gb }}"
+              delete_on_termination: true
+        # tags:
+        #   - key: Name
+        #     value: "{{ instance_name }}"
+        #   - key: Environment
+        #     value: "Production"
+      register: ec2_info
 
-    - name: Display instance information
+    - name: debugging ec2 instance
       debug:
-        var: ec2_instance.instances[0].public_ip
+        msg: "{{ ec2_info }}"
