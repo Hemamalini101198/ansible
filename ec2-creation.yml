@@ -12,7 +12,7 @@
     instance_name: "ansible-test-instance"
     vpc_id: "vpc-02925fd2ece64136d"
     ebs_volume_size_gb: "30"
-    ebs_volume_device: "/dev/sdf"
+    ebs_volume_device: "/dev/sda1"
 
   tasks:
     - name: Create Key Pair
